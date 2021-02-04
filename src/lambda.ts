@@ -1,16 +1,15 @@
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import serverlessExpress from '@vendia/serverless-express';
-import { Context } from 'aws-lambda';
+import { Context, Handler } from 'aws-lambda';
 import express from 'express';
-import { RequestListener } from 'http';
 
 import { AppModule } from './app.module';
 
-let cachedApp: RequestListener;
+let cachedServer: Handler;
 
 async function bootstrap() {
-  if (!cachedApp) {
+  if (!cachedServer) {
     const expressApp = express();
     const nestApp = await NestFactory.create(
       AppModule,
@@ -21,14 +20,13 @@ async function bootstrap() {
 
     await nestApp.init();
 
-    cachedApp = expressApp;
+    cachedServer = serverlessExpress({ app: expressApp }).handler;
   }
 
-  return cachedApp;
+  return cachedServer;
 }
 
 export const handler = async (event: any, context: Context, callback: any) => {
-  const app = await bootstrap();
-  const { handler } = serverlessExpress({ app });
-  handler(event, context, callback);
+  const server = await bootstrap();
+  return server(event, context, callback);
 };

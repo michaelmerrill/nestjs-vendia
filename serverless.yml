@@ -17,4 +17,4 @@ functions:
    events:
      - http:
          method: any
-         path: /{any+}
+         path: /hello
